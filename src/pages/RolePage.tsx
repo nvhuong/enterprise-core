@@ -289,7 +289,7 @@ export default function RolePage() {
                     if (!acc[serviceName]) acc[serviceName] = [];
                     acc[serviceName].push(feature);
                     return acc;
-                  }, {} as Record<string, Feature[]>)).map(([serviceName, serviceFeatures]) => (
+                  }, {} as Record<string, Feature[]>)).map(([serviceName, serviceFeatures]: [string, Feature[]]) => (
                     <React.Fragment key={serviceName}>
                       <tr className="bg-gray-100">
                         <td colSpan={permTypes.length + 1} className="p-2 px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">
