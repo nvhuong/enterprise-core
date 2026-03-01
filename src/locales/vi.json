@@ -1,0 +1,105 @@
+{
+  "common": {
+    "dashboard": "Bảng điều khiển",
+    "companies": "Công ty",
+    "employees": "Nhân viên",
+    "settings": "Cài đặt",
+    "system": "Hệ thống",
+    "main": "Chính",
+    "adminUser": "Quản trị viên",
+    "apps": "Ứng dụng",
+    "notifications": "Thông báo",
+    "search": "Tìm kiếm...",
+    "filters": "Bộ lọc",
+    "actions": "Hành động",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "loading": "Đang tải...",
+    "back": "Quay lại",
+    "confirmDelete": "Bạn có chắc chắn muốn xóa mục này không?",
+    "noData": "Không có dữ liệu",
+    "id": "ID",
+    "status": "Trạng thái",
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động",
+    "suspended": "Đình chỉ",
+    "language": "Ngôn ngữ"
+  },
+  "company": {
+    "title": "Quản lý Công ty",
+    "subtitle": "Quản lý các công ty thuê bao của bạn",
+    "add": "Thêm Công ty",
+    "edit": "Sửa Công ty",
+    "new": "Công ty Mới",
+    "newSubtitle": "Đăng ký công ty thuê bao mới",
+    "editSubtitle": "Cập nhật thông tin công ty",
+    "name": "Tên Công ty",
+    "type": "Loại hình",
+    "taxCode": "Mã số thuế",
+    "types": {
+      "LIMITED": "TNHH",
+      "JOINT_STOCK": "Cổ phần",
+      "GROUP": "Tập đoàn"
+    },
+    "inactiveNote": "Các công ty không hoạt động không thể truy cập hệ thống."
+  },
+  "organization": {
+    "title": "Sơ đồ Tổ chức",
+    "subtitle": "Quản lý phòng ban và cơ cấu tổ chức",
+    "addRoot": "Thêm Đơn vị Gốc",
+    "addChild": "Thêm Đơn vị Con",
+    "edit": "Sửa Đơn vị",
+    "new": "Đơn vị Mới",
+    "name": "Tên Đơn vị",
+    "type": "Loại Đơn vị",
+    "types": {
+      "DEPARTMENT": "Phòng ban",
+      "TEAM": "Nhóm",
+      "DIVISION": "Khối",
+      "BRANCH": "Chi nhánh"
+    },
+    "nav": "Cơ cấu Tổ chức",
+    "noData": "Chưa có đơn vị tổ chức nào. Hãy tạo mới để bắt đầu."
+  },
+  "role": {
+    "title": "Vai trò & Phân quyền",
+    "subtitle": "Quản lý vai trò người dùng và quyền truy cập",
+    "nav": "Vai trò & Quyền",
+    "add": "Thêm Vai trò",
+    "edit": "Sửa Vai trò",
+    "new": "Vai trò Mới",
+    "name": "Tên Vai trò",
+    "description": "Mô tả",
+    "scopeType": "Phạm vi Dữ liệu",
+    "scopes": {
+      "CUSTOM": "Tùy chỉnh (Theo đơn vị)",
+      "SELF": "Chỉ cá nhân"
+    },
+    "managePermissions": "Quản lý Quyền",
+    "permissionsTitle": "Phân quyền: {{role}}",
+    "permissionsSubtitle": "Cấu hình quyền truy cập cho vai trò này",
+    "feature": "Tính năng",
+    "savePermissions": "Lưu Thay đổi",
+    "saveSuccess": "Đã lưu quyền thành công",
+    "saveError": "Lỗi khi lưu quyền"
+  },
+  "service": {
+    "title": "Dịch vụ & Tính năng",
+    "subtitle": "Danh sách các dịch vụ và tính năng trong hệ thống",
+    "nav": "Dịch vụ",
+    "features": "Tính năng",
+    "noFeatures": "Chưa có tính năng nào",
+    "enableFeature": "Bật tính năng",
+    "disableFeature": "Tắt tính năng"
+  },
+  "apps": {
+    "hrm": "Quản trị Nhân sự",
+    "erp": "Hoạch định Nguồn lực",
+    "wiki": "Tri thức Doanh nghiệp",
+    "crm": "Quản lý Khách hàng",
+    "project": "Quản lý Dự án"
+  }
+}

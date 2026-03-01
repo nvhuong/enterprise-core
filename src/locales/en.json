@@ -1,0 +1,105 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "companies": "Companies",
+    "employees": "Employees",
+    "settings": "Settings",
+    "system": "System",
+    "main": "Main",
+    "adminUser": "Admin User",
+    "apps": "Apps",
+    "notifications": "Notifications",
+    "search": "Search...",
+    "filters": "Filters",
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "back": "Back",
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "noData": "No data found",
+    "id": "ID",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "language": "Language"
+  },
+  "company": {
+    "title": "Companies",
+    "subtitle": "Manage your tenant companies",
+    "add": "Add Company",
+    "edit": "Edit Company",
+    "new": "New Company",
+    "newSubtitle": "Register a new tenant company",
+    "editSubtitle": "Update company details",
+    "name": "Company Name",
+    "type": "Type",
+    "taxCode": "Tax Code",
+    "types": {
+      "LIMITED": "Limited Liability",
+      "JOINT_STOCK": "Joint Stock",
+      "GROUP": "Group / Corporation"
+    },
+    "inactiveNote": "Inactive companies cannot access the system."
+  },
+  "organization": {
+    "title": "Organization Chart",
+    "subtitle": "Manage departments and structure",
+    "addRoot": "Add Root Unit",
+    "addChild": "Add Child",
+    "edit": "Edit Unit",
+    "new": "New Unit",
+    "name": "Unit Name",
+    "type": "Unit Type",
+    "types": {
+      "DEPARTMENT": "Department",
+      "TEAM": "Team",
+      "DIVISION": "Division",
+      "BRANCH": "Branch"
+    },
+    "nav": "Organization",
+    "noData": "No organization units found. Create one to get started."
+  },
+  "role": {
+    "title": "Roles & Permissions",
+    "subtitle": "Manage user roles and access rights",
+    "nav": "Roles & Permissions",
+    "add": "Add Role",
+    "edit": "Edit Role",
+    "new": "New Role",
+    "name": "Role Name",
+    "description": "Description",
+    "scopeType": "Data Scope",
+    "scopes": {
+      "CUSTOM": "Custom (Unit based)",
+      "SELF": "Self Only"
+    },
+    "managePermissions": "Manage Permissions",
+    "permissionsTitle": "Permissions: {{role}}",
+    "permissionsSubtitle": "Configure access rights for this role",
+    "feature": "Feature",
+    "savePermissions": "Save Changes",
+    "saveSuccess": "Permissions saved successfully",
+    "saveError": "Failed to save permissions"
+  },
+  "service": {
+    "title": "Services & Features",
+    "subtitle": "List of system services and features",
+    "nav": "Services",
+    "features": "Features",
+    "noFeatures": "No features available",
+    "enableFeature": "Enable Feature",
+    "disableFeature": "Disable Feature"
+  },
+  "apps": {
+    "hrm": "HR Management",
+    "erp": "Enterprise Resource Planning",
+    "wiki": "Knowledge Base",
+    "crm": "Customer Relationship",
+    "project": "Project Management"
+  }
+}

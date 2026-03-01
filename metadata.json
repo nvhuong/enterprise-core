@@ -1,0 +1,5 @@
+{
+  "name": "Spring Boot RBAC Generator",
+  "description": "Generates and displays Java Spring Boot code for an Enterprise RBAC system based on the provided PostgreSQL schema.",
+  "requestFramePermissions": []
+}
