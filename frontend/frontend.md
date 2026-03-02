@@ -2,7 +2,7 @@
 
 This document outlines the architectural and design standards for building applications within the Enterprise Ecosystem. Adhering to these rules ensures consistency, scalability, and a unified user experience across all modules (HRM, ERP, CRM, etc.).
 
-## 1. Core Tech Stack
+## Core Tech Stack
 
 - **Framework**: React 18+ (Functional Components, Hooks)
 - **Build Tool**: Vite
@@ -13,7 +13,7 @@ This document outlines the architectural and design standards for building appli
 - **Internationalization**: i18next
 - **Notifications**: react-hot-toast
 
-## 2. Design System & Theming
+## Design System & Theming
 
 ### Colors
 - **Primary**: Indigo (`#4f46e5` - `indigo-600`)
@@ -35,7 +35,7 @@ This document outlines the architectural and design standards for building appli
 - **Shadows**: Use `shadow-sm` for cards and `shadow-lg` for floating elements (modals, dropdowns).
 - **Borders**: `border-gray-200` or `border-gray-100` for subtle separation.
 
-## 3. Layout Architecture
+## Layout Architecture
 
 Every application must utilize the standard `Layout` component to maintain ecosystem consistency.
 
@@ -81,7 +81,7 @@ The header is the primary navigation and context anchor for the entire ecosystem
 - **Grouping**: Navigation items should be grouped (e.g., "Main", "System").
 - **Active State**: Use `bg-indigo-50 text-indigo-600` for the active route.
 
-## 4. Component Patterns
+## Component Patterns
 
 ### Data Tables
 - **Header**: Sticky header with light gray background (`bg-gray-50`).
@@ -99,19 +99,19 @@ The header is the primary navigation and context anchor for the entire ecosystem
 - **Validation**: Real-time feedback using `react-hot-toast` or inline error messages.
 - **Buttons**: Primary action in `indigo-600`, secondary in `gray-100`.
 
-## 5. Data Visualization (Dashboards)
+## Data Visualization (Dashboards)
 
 - **Stat Cards**: Use a consistent grid (1, 2, or 4 columns). Include an icon, label, value, and trend indicator.
 - **Charts**: Use `AreaChart` for trends and `PieChart` for distributions.
 - **Responsiveness**: All charts must be wrapped in `ResponsiveContainer`.
 
-## 6. Internationalization (i18n)
+## Internationalization (i18n)
 
 - All user-facing text must be stored in `/src/locales/`.
 - Use the `useTranslation` hook: `const { t } = useTranslation();`.
 - Keys should be organized by module: `t('company.title')`, `t('role.permissions')`.
 
-## 7. API & State Management
+## API & State Management
 
 - **Services**: Logic should be encapsulated in service objects (e.g., `companyService`).
 - **Async Handling**: Use `loading` states and try-catch blocks with toast notifications for errors.
@@ -119,7 +119,7 @@ The header is the primary navigation and context anchor for the entire ecosystem
   - `ACTIVE`: Emerald theme.
   - `INACTIVE/LOCKED`: Amber/Red theme.
 
-## 8. Ecosystem Integration
+## Ecosystem Integration
 
 When building a new module:
 1. **Register in App Switcher**: Add the new app icon and link to the `Layout` component.
