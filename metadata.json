@@ -1,5 +1,5 @@
 {
-  "name": "Spring Boot RBAC Generator",
-  "description": "Generates and displays Java Spring Boot code for an Enterprise RBAC system based on the provided PostgreSQL schema.",
+  "name": "Enterprise Ecosystem",
+  "description": "Full-stack Enterprise Ecosystem with Java Spring Boot backend and React frontend.",
   "requestFramePermissions": []
 }

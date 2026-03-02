@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Enterprise Ecosystem
 
-# Run and deploy your AI Studio app
+This project is a full-stack enterprise ecosystem with a Java Spring Boot backend and a React frontend.
 
-This contains everything you need to run your app locally.
+## Project Structure
 
-View your app in AI Studio: https://ai.studio/apps/b535dc89-c61f-4103-9216-5cc43c5dd9c2
+- `backend/`: Java Spring Boot application.
+- `frontend/`: React application with Vite.
+- `docker-compose.yml`: Orchestrates both services.
 
-## Run Locally
+## Backend
 
-**Prerequisites:**  Node.js
+The backend is built with Spring Boot 3.2.2 and uses an H2 in-memory database for development.
 
+### Key Components
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- `ApiApplication.java`: Main entry point.
+- `model/`: JPA entities (Company, Role, Employee).
+- `repository/`: Spring Data JPA repositories.
+- `controller/`: REST controllers.
+
+## Frontend
+
+The frontend is built with React 18 and Vite. It uses Tailwind CSS for styling and Recharts for data visualization.
+
+### Key Components
+
+- `src/api.ts`: API service layer.
+- `src/pages/`: Page components (Dashboard, Company List, Role Page, etc.).
+- `src/components/`: Reusable UI components.
+
+## Docker
+
+To run the entire ecosystem with Docker:
+
+```bash
+docker-compose up --build
+```
