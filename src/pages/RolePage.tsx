@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { roleService, Role, companyService, Company, permissionService, Feature, PermissionType, RolePermission } from '../api';
-import { Plus, Edit2, Trash2, Shield, Check, X } from 'lucide-react';
+import { roleService, Role, companyService, Company, permissionService, Feature, PermissionType, RolePermission, serviceService, Service } from '../api';
+import CompanySelect from '../components/CompanySelect';
+import { Plus, Edit2, Lock, Unlock, Shield, Check, X, Search, ChevronRight, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function RolePage() {
   const { t } = useTranslation();
@@ -12,34 +14,47 @@ export default function RolePage() {
   
   // Role Form
   const [showRoleForm, setShowRoleForm] = useState(false);
-  const [roleData, setRoleData] = useState<Partial<Role>>({ name: '', description: '', scope_type: 'CUSTOM' });
+  const [roleData, setRoleData] = useState<Partial<Role>>({ name: '', description: '' });
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+
+  // Lock Confirmation
+  const [roleToLock, setRoleToLock] = useState<Role | null>(null);
 
   // Permission Matrix
   const [showPermissions, setShowPermissions] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [permTypes, setPermTypes] = useState<PermissionType[]>([]);
   const [rolePerms, setRolePerms] = useState<RolePermission[]>([]);
+  const [matrixSearch, setMatrixSearch] = useState('');
 
   useEffect(() => {
     loadCompanies();
-    loadMetadata();
+    loadGlobalMetadata();
   }, []);
 
   useEffect(() => {
     if (selectedCompanyId) {
       loadRoles(selectedCompanyId);
+      loadCompanyMetadata(selectedCompanyId);
     }
   }, [selectedCompanyId]);
 
-  const loadMetadata = async () => {
-    const [f, p] = await Promise.all([
-      permissionService.getFeatures(),
-      permissionService.getPermissionTypes()
+  const loadGlobalMetadata = async () => {
+    const p = await permissionService.getPermissionTypes();
+    setPermTypes(p);
+  };
+
+  const loadCompanyMetadata = async (companyId: string) => {
+    const [f, s] = await Promise.all([
+      permissionService.getFeatures(companyId),
+      serviceService.getAll(companyId)
     ]);
     setFeatures(f);
-    setPermTypes(p);
+    setServices(s);
+    if (s.length > 0 && !selectedServiceId) setSelectedServiceId(s[0].id);
   };
 
   const loadCompanies = async () => {
@@ -60,25 +75,36 @@ export default function RolePage() {
 
   const handleRoleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const loadingToast = toast.loading(t('common.saving'));
     try {
       if (editingRoleId) {
         await roleService.update(editingRoleId, roleData);
+        toast.success(t('common.updateSuccess'), { id: loadingToast });
       } else {
         await roleService.create(selectedCompanyId, roleData);
+        toast.success(t('common.createSuccess'), { id: loadingToast });
       }
       loadRoles(selectedCompanyId);
       setShowRoleForm(false);
-      setRoleData({ name: '', description: '', scope_type: 'CUSTOM' });
+      setRoleData({ name: '', description: '' });
       setEditingRoleId(null);
     } catch (error) {
-      alert(t('common.saveError'));
+      toast.error(t('common.saveError'), { id: loadingToast });
     }
   };
 
-  const handleDeleteRole = async (id: string) => {
-    if (window.confirm(t('common.confirmDelete'))) {
-      await roleService.delete(id);
+  const confirmToggleRoleStatus = async () => {
+    if (!roleToLock) return;
+    const isLocking = roleToLock.status === 'ACTIVE';
+    const newStatus = isLocking ? 'INACTIVE' : 'ACTIVE';
+    const loadingToast = toast.loading(t('common.saving'));
+    try {
+      await roleService.update(roleToLock.id, { status: newStatus });
+      toast.success(t('common.updateSuccess'), { id: loadingToast });
+      setRoleToLock(null);
       loadRoles(selectedCompanyId);
+    } catch (error) {
+      toast.error(t('common.saveError'), { id: loadingToast });
     }
   };
 
@@ -111,14 +137,60 @@ export default function RolePage() {
     setRolePerms(newPerms);
   };
 
+  const toggleRow = (featureId: string) => {
+    const featurePerms = permTypes.map(pt => ({ featureId, ptId: pt.id }));
+    const allAllowed = featurePerms.every(p => isAllowed(p.featureId, p.ptId));
+    
+    let newPerms = [...rolePerms];
+    featurePerms.forEach(p => {
+      const index = newPerms.findIndex(rp => rp.feature_id === p.featureId && rp.permission_type_id === p.ptId);
+      if (index !== -1) {
+        newPerms[index] = { ...newPerms[index], is_allowed: allAllowed ? 0 : 1 };
+      } else if (!allAllowed) {
+        newPerms.push({
+          id: '',
+          role_id: selectedRole!.id,
+          feature_id: p.featureId,
+          permission_type_id: p.ptId,
+          is_allowed: 1
+        });
+      }
+    });
+    setRolePerms(newPerms);
+  };
+
+  const toggleColumn = (permTypeId: string) => {
+    const serviceFeatures = features.filter(f => f.service_id === selectedServiceId);
+    const columnPerms = serviceFeatures.map(f => ({ featureId: f.id, ptId: permTypeId }));
+    const allAllowed = columnPerms.every(p => isAllowed(p.featureId, p.ptId));
+
+    let newPerms = [...rolePerms];
+    columnPerms.forEach(p => {
+      const index = newPerms.findIndex(rp => rp.feature_id === p.featureId && rp.permission_type_id === p.ptId);
+      if (index !== -1) {
+        newPerms[index] = { ...newPerms[index], is_allowed: allAllowed ? 0 : 1 };
+      } else if (!allAllowed) {
+        newPerms.push({
+          id: '',
+          role_id: selectedRole!.id,
+          feature_id: p.featureId,
+          permission_type_id: p.ptId,
+          is_allowed: 1
+        });
+      }
+    });
+    setRolePerms(newPerms);
+  };
+
   const savePermissions = async () => {
     if (!selectedRole) return;
+    const loadingToast = toast.loading(t('common.saving'));
     try {
       await permissionService.updateRolePermissions(selectedRole.id, rolePerms);
       setShowPermissions(false);
-      alert(t('role.saveSuccess'));
+      toast.success(t('role.saveSuccess'), { id: loadingToast });
     } catch (error) {
-      alert(t('role.saveError'));
+      toast.error(t('role.saveError'), { id: loadingToast });
     }
   };
 
@@ -135,18 +207,15 @@ export default function RolePage() {
           <p className="text-gray-500">{t('role.subtitle')}</p>
         </div>
         <div className="flex items-center gap-4">
-          <select 
-            value={selectedCompanyId} 
-            onChange={(e) => setSelectedCompanyId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-          >
-            {companies.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <CompanySelect
+            companies={companies}
+            selectedId={selectedCompanyId}
+            onSelect={setSelectedCompanyId}
+            className="w-64"
+          />
           <button
             onClick={() => { 
-              setRoleData({ name: '', description: '', scope_type: 'CUSTOM' }); 
+              setRoleData({ name: '', description: '' }); 
               setEditingRoleId(null); 
               setShowRoleForm(true); 
             }}
@@ -178,11 +247,15 @@ export default function RolePage() {
                   <Edit2 size={16} />
                 </button>
                 <button 
-                  onClick={() => handleDeleteRole(role.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                  title={t('common.delete')}
+                  onClick={() => setRoleToLock(role)}
+                  className={`p-1.5 rounded ${
+                    role.status === 'ACTIVE' 
+                      ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' 
+                      : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                  }`}
+                  title={role.status === 'ACTIVE' ? t('common.lock') : t('common.unlock')}
                 >
-                  <Trash2 size={16} />
+                  {role.status === 'ACTIVE' ? <Lock size={16} /> : <Unlock size={16} />}
                 </button>
               </div>
             </div>
@@ -200,6 +273,43 @@ export default function RolePage() {
           </div>
         ))}
       </div>
+
+      {/* Lock Confirmation Modal */}
+      {roleToLock && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+            <div className={`flex items-center gap-3 mb-4 ${roleToLock.status === 'ACTIVE' ? 'text-amber-600' : 'text-emerald-600'}`}>
+              <div className={`p-2 rounded-full ${roleToLock.status === 'ACTIVE' ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold">
+                {roleToLock.status === 'ACTIVE' ? t('common.confirmLock') : t('common.confirmUnlock')}
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              {roleToLock.status === 'ACTIVE' 
+                ? t('role.lockConfirmText', { name: roleToLock.name }) 
+                : t('role.unlockConfirmText', { name: roleToLock.name })}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setRoleToLock(null)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={confirmToggleRoleStatus}
+                className={`px-4 py-2 text-white rounded-lg ${
+                  roleToLock.status === 'ACTIVE' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {roleToLock.status === 'ACTIVE' ? t('common.lock') : t('common.unlock')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Role Form Modal */}
       {showRoleForm && (
@@ -226,17 +336,6 @@ export default function RolePage() {
                   rows={3}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('role.scopeType')}</label>
-                <select
-                  value={roleData.scope_type}
-                  onChange={e => setRoleData({ ...roleData, scope_type: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="CUSTOM">{t('role.scopes.CUSTOM')}</option>
-                  <option value="SELF">{t('role.scopes.SELF')}</option>
-                </select>
-              </div>
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
@@ -260,68 +359,142 @@ export default function RolePage() {
       {/* Permissions Matrix Modal */}
       {showPermissions && selectedRole && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl p-6 h-[80vh] flex flex-col">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-6xl p-6 h-[85vh] flex flex-col">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{t('role.permissionsTitle', { role: selectedRole.name })}</h3>
                 <p className="text-sm text-gray-500">{t('role.permissionsSubtitle')}</p>
               </div>
-              <button onClick={() => setShowPermissions(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder={t('common.search')}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={matrixSearch}
+                    onChange={(e) => setMatrixSearch(e.target.value)}
+                  />
+                </div>
+                <button onClick={() => setShowPermissions(false)} className="p-2 hover:bg-gray-100 rounded-full shrink-0">
+                  <X size={24} />
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-auto border border-gray-200 rounded-lg">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                  <tr>
-                    <th className="p-4 border-b border-gray-200 font-medium text-gray-500 text-sm">{t('role.feature')}</th>
-                    {permTypes.map(pt => (
-                      <th key={pt.id} className="p-4 border-b border-gray-200 font-medium text-gray-500 text-sm text-center">
-                        {pt.code}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {Object.entries(features.reduce((acc, feature) => {
-                    const serviceName = feature.service_name || 'Other';
-                    if (!acc[serviceName]) acc[serviceName] = [];
-                    acc[serviceName].push(feature);
-                    return acc;
-                  }, {} as Record<string, Feature[]>)).map(([serviceName, serviceFeatures]: [string, Feature[]]) => (
-                    <React.Fragment key={serviceName}>
-                      <tr className="bg-gray-100">
-                        <td colSpan={permTypes.length + 1} className="p-2 px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">
-                          {serviceName}
-                        </td>
+            <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
+              {/* Service List Sidebar */}
+              <div className="w-64 border-r pr-4 overflow-y-auto custom-scrollbar">
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-2">
+                  {t('service.title')}
+                </h4>
+                <div className="space-y-1">
+                  {services.map(service => {
+                    const isActive = selectedServiceId === service.id;
+                    const serviceFeatureCount = features.filter(f => f.service_id === service.id).length;
+                    
+                    return (
+                      <button
+                        key={service.id}
+                        onClick={() => setSelectedServiceId(service.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all ${
+                          isActive 
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="font-medium truncate">{service.name}</span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                            {serviceFeatureCount}
+                          </span>
+                          <ChevronRight size={14} className={isActive ? 'opacity-100' : 'opacity-0'} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Features Matrix for Selected Service */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="text-lg font-bold text-gray-800">
+                    {services.find(s => s.id === selectedServiceId)?.name}
+                  </h4>
+                </div>
+                
+                <div className="flex-1 overflow-auto border border-gray-200 rounded-lg custom-scrollbar">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="p-4 border-b border-gray-200 font-medium text-gray-500 text-sm">{t('role.feature')}</th>
+                        {permTypes.map(pt => (
+                          <th key={pt.id} className="p-4 border-b border-gray-200 font-medium text-gray-500 text-sm text-center">
+                            <button 
+                              onClick={() => toggleColumn(pt.id)}
+                              className="hover:text-indigo-600 transition-colors flex flex-col items-center gap-1 mx-auto group"
+                              title={t('role.toggleColumn')}
+                            >
+                              <span className="group-hover:underline">{pt.code}</span>
+                              <Check size={12} className="opacity-0 group-hover:opacity-50" />
+                            </button>
+                          </th>
+                        ))}
                       </tr>
-                      {serviceFeatures.map(feature => (
-                        <tr key={feature.id} className="hover:bg-gray-50">
-                          <td className="p-4 text-sm font-medium text-gray-900 pl-8 border-l-4 border-transparent hover:border-indigo-500 transition-colors">
-                            {feature.name}
-                            <div className="text-xs text-gray-400 font-normal">{feature.code}</div>
-                          </td>
-                          {permTypes.map(pt => (
-                            <td key={pt.id} className="p-4 text-center">
-                              <button
-                                onClick={() => togglePermission(feature.id, pt.id)}
-                                className={`w-6 h-6 rounded border flex items-center justify-center transition-colors mx-auto ${
-                                  isAllowed(feature.id, pt.id)
-                                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                                    : 'bg-white border-gray-300 text-transparent hover:border-indigo-400'
-                                }`}
-                              >
-                                <Check size={14} />
-                              </button>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {features
+                        .filter(f => f.service_id === selectedServiceId)
+                        .filter(f => 
+                          !matrixSearch || 
+                          f.name.toLowerCase().includes(matrixSearch.toLowerCase()) || 
+                          f.code.toLowerCase().includes(matrixSearch.toLowerCase())
+                        )
+                        .map(feature => (
+                          <tr key={feature.id} className="hover:bg-gray-50 group/row">
+                            <td className="p-4 text-sm font-medium text-gray-900 pl-6 border-l-4 border-transparent hover:border-indigo-500 transition-colors">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  {feature.name}
+                                  <div className="text-xs text-gray-400 font-normal">{feature.code}</div>
+                                </div>
+                                <button 
+                                  onClick={() => toggleRow(feature.id)}
+                                  className="p-1 text-gray-300 hover:text-indigo-600 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                                  title={t('role.toggleRow')}
+                                >
+                                  <Check size={14} />
+                                </button>
+                              </div>
                             </td>
-                          ))}
+                            {permTypes.map(pt => (
+                              <td key={pt.id} className="p-4 text-center">
+                                <button
+                                  onClick={() => togglePermission(feature.id, pt.id)}
+                                  className={`w-6 h-6 rounded border flex items-center justify-center transition-colors mx-auto ${
+                                    isAllowed(feature.id, pt.id)
+                                      ? 'bg-indigo-600 border-indigo-600 text-white'
+                                      : 'bg-white border-gray-300 text-transparent hover:border-indigo-400'
+                                  }`}
+                                >
+                                  <Check size={14} />
+                                </button>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      {features.filter(f => f.service_id === selectedServiceId).length === 0 && (
+                        <tr>
+                          <td colSpan={permTypes.length + 1} className="p-8 text-center text-gray-400 italic">
+                            {t('service.noFeatures')}
+                          </td>
                         </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">

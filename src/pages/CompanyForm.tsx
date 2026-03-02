@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { companyService, Company } from '../api';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 export default function CompanyForm() {
   const { t } = useTranslation();
@@ -32,8 +33,7 @@ export default function CompanyForm() {
         setFormData(data);
       }
     } catch (error) {
-      console.error('Failed to load company', error);
-      alert('Failed to load company details');
+      toast.error(t('common.loadError'));
       navigate('/companies');
     } finally {
       setLoading(false);
@@ -42,19 +42,18 @@ export default function CompanyForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const loadingToast = toast.loading(t('common.saving'));
     try {
       if (isEdit && id) {
         await companyService.update(id, formData);
+        toast.success(t('common.updateSuccess'), { id: loadingToast });
       } else {
         await companyService.create(formData as any);
+        toast.success(t('common.createSuccess'), { id: loadingToast });
       }
       navigate('/companies');
     } catch (error) {
-      console.error('Failed to save company', error);
-      alert('Failed to save company');
-    } finally {
-      setLoading(false);
+      toast.error(t('common.saveError'), { id: loadingToast });
     }
   };
 

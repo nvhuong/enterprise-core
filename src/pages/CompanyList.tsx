@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Building, Search, Filter } from 'lucide-react';
+import { Plus, Edit2, Lock, Unlock, Building, Search, Filter, AlertTriangle } from 'lucide-react';
 import { companyService, Company } from '../api';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 
 export default function CompanyList() {
   const { t } = useTranslation();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyToLock, setCompanyToLock] = useState<Company | null>(null);
 
   useEffect(() => {
     loadCompanies();
@@ -19,20 +21,24 @@ export default function CompanyList() {
       const data = await companyService.getAll();
       setCompanies(data);
     } catch (error) {
-      console.error('Failed to load companies', error);
+      toast.error(t('common.loadError'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm(t('common.confirmDelete'))) {
-      try {
-        await companyService.delete(id);
-        setCompanies(companies.filter(c => c.id !== id));
-      } catch (error) {
-        console.error('Failed to delete company', error);
-      }
+  const confirmToggleStatus = async () => {
+    if (!companyToLock) return;
+    const isLocking = companyToLock.status === 'ACTIVE';
+    const newStatus = isLocking ? 'INACTIVE' : 'ACTIVE';
+    const loadingToast = toast.loading(t('common.saving'));
+    try {
+      await companyService.update(companyToLock.id, { status: newStatus });
+      setCompanies(companies.map(c => c.id === companyToLock.id ? { ...c, status: newStatus } : c));
+      setCompanyToLock(null);
+      toast.success(t('common.updateSuccess'), { id: loadingToast });
+    } catch (error) {
+      toast.error(t('common.saveError'), { id: loadingToast });
     }
   };
 
@@ -141,11 +147,15 @@ export default function CompanyList() {
                         <Edit2 size={18} />
                       </Link>
                       <button 
-                        onClick={() => handleDelete(company.id)}
-                        className="inline-flex p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title={t('common.delete')}
+                        onClick={() => setCompanyToLock(company)}
+                        className={`inline-flex p-2 rounded-lg transition-colors ${
+                          company.status === 'ACTIVE' 
+                            ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' 
+                            : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                        }`}
+                        title={company.status === 'ACTIVE' ? t('common.lock') : t('common.unlock')}
                       >
-                        <Trash2 size={18} />
+                        {company.status === 'ACTIVE' ? <Lock size={18} /> : <Unlock size={18} />}
                       </button>
                     </td>
                   </tr>
@@ -155,6 +165,43 @@ export default function CompanyList() {
           </table>
         </div>
       </div>
+
+      {/* Lock Confirmation Modal */}
+      {companyToLock && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+            <div className={`flex items-center gap-3 mb-4 ${companyToLock.status === 'ACTIVE' ? 'text-amber-600' : 'text-emerald-600'}`}>
+              <div className={`p-2 rounded-full ${companyToLock.status === 'ACTIVE' ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold">
+                {companyToLock.status === 'ACTIVE' ? t('common.confirmLock') : t('common.confirmUnlock')}
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              {companyToLock.status === 'ACTIVE' 
+                ? t('company.lockConfirmText', { name: companyToLock.name }) 
+                : t('company.unlockConfirmText', { name: companyToLock.name })}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setCompanyToLock(null)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={confirmToggleStatus}
+                className={`px-4 py-2 text-white rounded-lg ${
+                  companyToLock.status === 'ACTIVE' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {companyToLock.status === 'ACTIVE' ? t('common.lock') : t('common.unlock')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

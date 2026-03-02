@@ -6,31 +6,28 @@ import CompanyForm from './pages/CompanyForm';
 import OrganizationPage from './pages/OrganizationPage';
 import RolePage from './pages/RolePage';
 import ServicePage from './pages/ServicePage';
+import EmployeesPage from './pages/EmployeesPage';
+
+import DashboardPage from './pages/DashboardPage';
+import SettingsPage from './pages/SettingsPage';
+
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/companies" replace />} />
+          <Route index element={<DashboardPage />} />
           <Route path="companies" element={<CompanyList />} />
           <Route path="companies/new" element={<CompanyForm />} />
           <Route path="companies/:id/edit" element={<CompanyForm />} />
           <Route path="organization" element={<OrganizationPage />} />
           <Route path="roles" element={<RolePage />} />
           <Route path="services" element={<ServicePage />} />
-          <Route path="employees" element={
-            <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-              <p className="text-lg font-medium">Employee Management</p>
-              <p className="text-sm">Module coming soon...</p>
-            </div>
-          } />
-          <Route path="settings" element={
-            <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-              <p className="text-lg font-medium">System Settings</p>
-              <p className="text-sm">Module coming soon...</p>
-            </div>
-          } />
+          <Route path="employees" element={<EmployeesPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
