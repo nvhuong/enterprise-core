@@ -2,11 +2,13 @@
 -- SUBSCRIPTION + RBAC + DYNAMIC DATA SCOPE (ENTERPRISE)
 -- PostgreSQL
 -- ==========================================================
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ==========================================================
 -- 1. ENUM LOẠI HÌNH DOANH NGHIỆP
 -- ==========================================================
+
 CREATE TYPE company_type_enum AS ENUM (
     'LIMITED',
     'JOINT_STOCK',
@@ -16,6 +18,7 @@ CREATE TYPE company_type_enum AS ENUM (
 -- ==========================================================
 -- 2. COMPANY (TENANT)
 -- ==========================================================
+
 CREATE TABLE company (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -29,6 +32,7 @@ CREATE TABLE company (
 -- ==========================================================
 -- 3. SERVICE
 -- ==========================================================
+
 CREATE TABLE service (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(100) UNIQUE NOT NULL,
@@ -41,6 +45,7 @@ CREATE TABLE service (
 -- ==========================================================
 -- 4. COMPANY SUBSCRIPTION
 -- ==========================================================
+
 CREATE TABLE company_subscription (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID REFERENCES company(id) ON DELETE CASCADE,
@@ -56,6 +61,7 @@ CREATE TABLE company_subscription (
 -- ==========================================================
 -- 5. ORGANIZATION UNIT (CÂY TỔ CHỨC)
 -- ==========================================================
+
 CREATE TABLE organization_unit (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID REFERENCES company(id) ON DELETE CASCADE,
@@ -66,12 +72,14 @@ CREATE TABLE organization_unit (
     path VARCHAR(500),
     created_at TIMESTAMP DEFAULT now()
 );
+
 CREATE INDEX idx_org_company ON organization_unit(company_id);
 CREATE INDEX idx_org_parent ON organization_unit(parent_id);
 
 -- ==========================================================
 -- 6. EMPLOYEE
 -- ==========================================================
+
 CREATE TABLE employee (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID REFERENCES company(id) ON DELETE CASCADE,
@@ -81,14 +89,16 @@ CREATE TABLE employee (
     created_at TIMESTAMP DEFAULT now(),
     UNIQUE(company_id, email)
 );
+
 CREATE INDEX idx_employee_company ON employee(company_id);
 
 -- ==========================================================
 -- 7. ROLE (TẬP QUYỀN + DATA SCOPE)
 -- ==========================================================
+
 CREATE TYPE role_scope_type_enum AS ENUM (
-    'SELF', -- chỉ chính mình
-    'CUSTOM' -- danh sách unit cụ thể
+    'SELF',     -- chỉ chính mình
+    'CUSTOM'    -- danh sách unit cụ thể
 );
 
 CREATE TABLE role (
@@ -101,17 +111,20 @@ CREATE TABLE role (
     created_at TIMESTAMP DEFAULT now(),
     UNIQUE(company_id, name)
 );
+
 CREATE INDEX idx_role_company ON role(company_id);
 
 -- ==========================================================
 -- 8. ROLE DATA SCOPE (CHỈ DÙNG KHI scope_type = CUSTOM)
 -- ==========================================================
+
 CREATE TABLE role_data_scope (
     role_id UUID REFERENCES role(id) ON DELETE CASCADE,
     organization_unit_id UUID REFERENCES organization_unit(id) ON DELETE CASCADE,
     include_child BOOLEAN DEFAULT false,
     PRIMARY KEY(role_id, organization_unit_id)
 );
+
 CREATE INDEX idx_scope_role ON role_data_scope(role_id);
 CREATE INDEX idx_scope_unit ON role_data_scope(organization_unit_id);
 
@@ -119,20 +132,26 @@ CREATE INDEX idx_scope_unit ON role_data_scope(organization_unit_id);
 -- 9. EMPLOYEE_ROLE
 -- Membership + Scope Role + Title hiển thị
 -- ==========================================================
+
 CREATE TABLE employee_role (
     employee_id UUID REFERENCES employee(id) ON DELETE CASCADE,
     role_id UUID REFERENCES role(id) ON DELETE CASCADE,
     organization_unit_id UUID REFERENCES organization_unit(id) ON DELETE CASCADE,
+
     title VARCHAR(255), -- Chức danh hiển thị (Giám đốc, Trưởng phòng...)
+
     assigned_at TIMESTAMP DEFAULT now(),
+
     PRIMARY KEY(employee_id, role_id, organization_unit_id)
 );
+
 CREATE INDEX idx_emp_role_employee ON employee_role(employee_id);
 CREATE INDEX idx_emp_role_unit ON employee_role(organization_unit_id);
 
 -- ==========================================================
 -- 10. FEATURE
 -- ==========================================================
+
 CREATE TABLE feature (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     service_id UUID REFERENCES service(id) ON DELETE CASCADE,
@@ -141,11 +160,13 @@ CREATE TABLE feature (
     created_at TIMESTAMP DEFAULT now(),
     UNIQUE(service_id, code)
 );
+
 CREATE INDEX idx_feature_service ON feature(service_id);
 
 -- ==========================================================
 -- 11. PERMISSION TYPE
 -- ==========================================================
+
 CREATE TABLE permission_type (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(50) UNIQUE NOT NULL
@@ -154,6 +175,7 @@ CREATE TABLE permission_type (
 -- ==========================================================
 -- 12. ROLE_PERMISSION
 -- ==========================================================
+
 CREATE TABLE role_permission (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     role_id UUID REFERENCES role(id) ON DELETE CASCADE,
@@ -163,12 +185,14 @@ CREATE TABLE role_permission (
     created_at TIMESTAMP DEFAULT now(),
     UNIQUE(role_id, feature_id, permission_type_id)
 );
+
 CREATE INDEX idx_role_permission_role ON role_permission(role_id);
 CREATE INDEX idx_role_permission_feature ON role_permission(feature_id);
 
 -- ==========================================================
 -- 13. TRIGGER CHỐNG CROSS-TENANT
 -- ==========================================================
+
 CREATE OR REPLACE FUNCTION check_employee_role_company()
 RETURNS TRIGGER AS $$
 DECLARE
